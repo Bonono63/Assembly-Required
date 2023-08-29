@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://di8hibhqp3kxh"]
+
+[ext_resource type="Script" path="res://World/entity.gd" id="1_djipv"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_63n7k"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_n2iut"]
+
+[node name="Entity" type="RigidBody3D"]
+gravity_scale = 0.0
+script = ExtResource("1_djipv")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_63n7k")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_n2iut")
