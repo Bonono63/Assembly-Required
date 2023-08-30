@@ -1,0 +1,15 @@
+ea4bc82a6ad023ab7ee23ee620429895
+::res://::1693422163
+block.gd::GDScript::-1::1693398758::0::1::::_block<>Node<>::
+icon.svg::CompressedTexture2D::14494537287170887::1693398758::1693398788::1::::<><>::
+item.gd::GDScript::-1::1693398758::0::1::::_item<>Node<>::
+kloofendal_43d_clear_puresky_4k.exr::CompressedTexture2D::3430786489183932999::1693398759::1693398789::1::::<><>::
+README.md::TextFile::-1::1693398758::0::1::::<><>::
+::res://World/::1693412420
+Camera.gd::GDScript::-1::1693398758::0::1::::<>Node3D<>::
+entity.gd::GDScript::-1::1693398758::0::1::::<>RigidBody3D<>::
+entity.tscn::PackedScene::7789336635453245005::1693412420::0::1::::<><>::res://World/entity.gd
+Player orientation test.gd::GDScript::-1::1693412371::0::1::::<>RigidBody3D<>::
+Player.gd::GDScript::-1::1693398758::0::1::::<>CharacterBody3D<>::
+world.gd::GDScript::-1::1693398758::0::1::::<>Node3D<>::
+world.tscn::PackedScene::9078151253356919790::1693412420::0::1::::<><>::res://World/world.gd<>uid://bo45s1m7n8c4n::::res://kloofendal_43d_clear_puresky_4k.exr<>uid://di8hibhqp3kxh::::res://World/entity.tscn<>res://World/Player orientation test.gd

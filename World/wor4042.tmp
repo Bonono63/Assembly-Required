@@ -1,0 +1,320 @@
+[gd_scene load_steps=30 format=3 uid="uid://d2lr3bqjaoydy"]
+
+[ext_resource type="Script" path="res://World/world.gd" id="1_q07gd"]
+[ext_resource type="Texture2D" uid="uid://bo45s1m7n8c4n" path="res://kloofendal_43d_clear_puresky_4k.exr" id="2_kedxi"]
+[ext_resource type="PackedScene" uid="uid://di8hibhqp3kxh" path="res://World/entity.tscn" id="3_mqu68"]
+[ext_resource type="Script" path="res://World/Player orientation test.gd" id="4_x6uby"]
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_qv1fm"]
+size = Vector2(16, 16)
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_lqg3t"]
+panorama = ExtResource("2_kedxi")
+
+[sub_resource type="Sky" id="Sky_awji0"]
+sky_material = SubResource("PanoramaSkyMaterial_lqg3t")
+
+[sub_resource type="Environment" id="Environment_yyoo0"]
+background_mode = 2
+sky = SubResource("Sky_awji0")
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 3
+ssr_enabled = true
+ssao_enabled = true
+sdfgi_enabled = true
+adjustment_enabled = true
+
+[sub_resource type="GDScript" id="GDScript_mu75s"]
+script/source = "extends RigidBody3D
+
+
+const WALKING_SPEED = 4.317
+const RUNNING_SPEED = 4.317*1.3
+const JUMP_VELOCITY = 1
+
+var SPEED : float = 5
+
+var walking : bool = false
+var walking_time : int = 0
+
+@export var entities : Node3D
+
+@export var mouse_sensitivity = 1.0
+
+@export var target_node : Node3D
+
+var x = 0
+var y = 0
+
+var inverse_x : bool = false
+var inverse_y : bool = false
+
+var current_camera : Camera3D
+
+func _ready():
+	get_window().focus_entered.connect(Callable(self,\"on_window_selected\"))
+	get_window().focus_exited.connect(Callable(self,\"on_window_exited\"))
+	$\"Camera x\".make_current()
+	current_camera = $\"Camera x\"
+
+func _unhandled_input(event):
+	if event is InputEventMouseMotion:
+		if event.relative.x != 0:
+			x = event.relative.x * mouse_sensitivity
+		if event.relative.y != 0:
+			y = event.relative.y * mouse_sensitivity
+
+func _integrate_forces(state):
+	# basic movement based off of the default character script
+	var input_dir = Input.get_vector(\"a\", \"d\", \"w\", \"s\")
+	#var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		apply_central_impulse(Vector3(direction.x * SPEED * state.step,0.0,direction.z * SPEED * state.step))
+	else:
+		apply_central_impulse(Vector3(-linear_velocity.x, 0.0,-linear_velocity.z))
+	
+	if Input.is_action_pressed(\"up\"):
+		apply_central_impulse(Vector3(0.0,JUMP_VELOCITY * state.step,0.0))
+	else:
+		if Input.is_action_pressed(\"down\"):
+			apply_central_impulse(Vector3(0.0,-JUMP_VELOCITY * state.step,0.0))
+		else:
+			apply_central_impulse(Vector3(0.0,-linear_velocity.y,0.0))
+	
+	#var target_position = target_node.position - Vector3(0.0,1.5,0.0)
+	#var target_direction = (target_position - position).normalized()
+	#var looking_at_transform = transform.looking_at(target_position, Vector3(0,-1,0), true).orthonormalized()
+	#print(transform.basis.y)
+	#print(looking_at_transform.basis.y)
+	#looking_at_transform.basis.y
+	#transform.basis.y = looking_at_transform.basis.y
+	#looking_at_transform.basis.x
+	#transform.basis.x = looking_at_transform.basis.x
+	#transform.orthonormalized()
+
+# Implement step assistance, essentially jump the player up the distance to cover a specific height, important for slopes, walking up a slope of blocks, or walking over small collision boxes
+
+func _process(delta):
+	if x != 0:
+		if inverse_x:
+			rotate_y(x*delta)
+		else:
+			rotate_y(-x*delta)
+	if y != 0:
+		if inverse_x:
+			current_camera.rotate_x(y*delta)
+		else:
+			current_camera.rotate_x(-y*delta)
+	
+	x = 0
+	y = 0
+
+func on_window_selected():
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func on_window_exited():
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+"
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_r4wgj"]
+radius = 0.375
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t1t8e"]
+albedo_color = Color(0.647059, 0.647059, 0.647059, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3mb51"]
+material = SubResource("StandardMaterial3D_t1t8e")
+size = Vector3(0.25, 0.25, 0.75)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_c745y"]
+radius = 0.375
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5vrin"]
+albedo_color = Color(1, 0, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_5shgj"]
+material = SubResource("StandardMaterial3D_5vrin")
+top_radius = 0.016
+bottom_radius = 0.016
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oclml"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_of3sm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghy8x"]
+albedo_color = Color(1, 0.176471, 0.0588235, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4vjd2"]
+material = SubResource("StandardMaterial3D_ghy8x")
+top_radius = 0.063
+bottom_radius = 0.063
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ip2it"]
+albedo_color = Color(0, 1, 0.152941, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ipmyp"]
+material = SubResource("StandardMaterial3D_ip2it")
+top_radius = 0.063
+bottom_radius = 0.063
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m3ixg"]
+albedo_color = Color(0.0666667, 1, 0.105882, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dp17k"]
+material = SubResource("StandardMaterial3D_m3ixg")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gs3sn"]
+albedo_color = Color(1, 0.0470588, 0.0588235, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qv3vu"]
+material = SubResource("StandardMaterial3D_gs3sn")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ki63a"]
+albedo_color = Color(0.0470588, 0.0862745, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ktbkw"]
+material = SubResource("StandardMaterial3D_ki63a")
+top_radius = 0.063
+bottom_radius = 0.063
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_guu7t"]
+albedo_color = Color(0.0705882, 0.0784314, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fiqev"]
+material = SubResource("StandardMaterial3D_guu7t")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
+
+[node name="World" type="Node3D"]
+script = ExtResource("1_q07gd")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Panel" parent="CanvasLayer"]
+offset_right = 327.0
+offset_bottom = 40.0
+mouse_filter = 2
+
+[node name="BUHASDBHJAS" type="Label" parent="CanvasLayer/Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -94.5
+offset_top = -13.0
+offset_right = 94.5
+offset_bottom = 13.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "HJBAK HJKB AS dHJBSDF "
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("PlaceholderTexture2D_qv1fm")
+stretch_mode = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_yyoo0")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.884711, -0.331057, 0.328158, 0, 0.70399, 0.71021, -0.46614, -0.628331, 0.622828, 2.86618, 7.83287, 8.03711)
+
+[node name="Player" type="RigidBody3D" parent="." node_paths=PackedStringArray("entities", "target_node")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9)
+max_contacts_reported = 1
+contact_monitor = true
+can_sleep = false
+script = SubResource("GDScript_mu75s")
+entities = NodePath("../entities")
+target_node = NodePath("../entities/Entity")
+
+[node name="Model" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_r4wgj")
+skeleton = NodePath("../..")
+
+[node name="Camera x" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+current = true
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player/Camera x"]
+transform = Transform3D(1, 0, 0, 0, 0.987557, -0.157262, 0, 0.157262, 0.987557, 0.600027, -0.441007, -0.476263)
+visible = false
+sorting_offset = 1.0
+mesh = SubResource("BoxMesh_3mb51")
+skeleton = NodePath("../..")
+
+[node name="Camera2 X" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 2.5, 2.9451)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_c745y")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("CylinderMesh_5shgj")
+
+[node name="entities" type="Node3D" parent="."]
+
+[node name="Entity" parent="entities" instance=ExtResource("3_mqu68")]
+
+[node name="Player orientation test" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.67851, 0, -3.17425)
+gravity_scale = 0.0
+script = ExtResource("4_x6uby")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player orientation test"]
+shape = SubResource("BoxShape3D_oclml")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player orientation test"]
+mesh = SubResource("CapsuleMesh_of3sm")
+
+[node name="Node3D" type="Node3D" parent="Player orientation test"]
+
+[node name="Arrow" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+mesh = SubResource("CylinderMesh_4vjd2")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_ipmyp")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, 1.62068, 0, 0)
+mesh = SubResource("CylinderMesh_dp17k")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.67107, 0)
+mesh = SubResource("CylinderMesh_qv3vu")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_ktbkw")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 1.16861)
+mesh = SubResource("CylinderMesh_fiqev")
