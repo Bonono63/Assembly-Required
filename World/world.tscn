@@ -1,8 +1,9 @@
-[gd_scene load_steps=15 format=3 uid="uid://d2lr3bqjaoydy"]
+[gd_scene load_steps=30 format=3 uid="uid://d2lr3bqjaoydy"]
 
 [ext_resource type="Script" path="res://World/world.gd" id="1_q07gd"]
 [ext_resource type="Texture2D" uid="uid://bo45s1m7n8c4n" path="res://kloofendal_43d_clear_puresky_4k.exr" id="2_kedxi"]
 [ext_resource type="PackedScene" uid="uid://di8hibhqp3kxh" path="res://World/entity.tscn" id="3_mqu68"]
+[ext_resource type="Script" path="res://World/Player orientation test.gd" id="4_x6uby"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_qv1fm"]
 size = Vector2(16, 16)
@@ -31,72 +32,18 @@ script/source = "extends RigidBody3D
 
 const WALKING_SPEED = 4.317
 const RUNNING_SPEED = 4.317*1.3
-const JUMP_VELOCITY = 5
+const JUMP_VELOCITY = 1
 
-var SPEED : float = 1
+var SPEED : float = 5
 
 var walking : bool = false
 var walking_time : int = 0
 
-# Get the gravity from the project settings to be synced with RigidBody nodes.
-var gravity = ProjectSettings.get_setting(\"physics/3d/default_gravity\")
-
-var hand_velocity : Vector2 = Vector2(0,0)
-
-#@onready var origin_hand_position : Vector3 = $\"Camera y/Camera x/MeshInstance3D\".position
-
 @export var entities : Node3D
 
-func _integrate_forces(state):
-	# basic movement based off of the default character script
-	var input_dir = Input.get_vector(\"a\", \"d\", \"w\", \"s\")
-	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	if direction:
-		apply_central_impulse(Vector3(direction.x * SPEED,0.0,direction.z * SPEED))
-	else:
-		apply_central_impulse(-linear_velocity*0.55)
-	orient_player(state)
-
-func _physics_process(delta):
-	# Handle Jump.
-	#if Input.is_action_just_pressed(\"ui_accept\") and is_on_floor():
-	#	velocity.y = JUMP_VELOCITY
-	
-	#if Input.is_action_pressed(\"shift\") and is_on_floor():
-	#	SPEED = RUNNING_SPEED
-	#else:
-	#	SPEED = WALKING_SPEED
-	pass
-
-# Orient the player to the center of gravity of the closest body if it has enough gravitational pull
-func orient_player(state):
-	var target_position
-	for entity in entities.get_children():
-		if target_position == null:
-			target_position = entity.position
-		else:
-			if position.distance_to(entity.position) < target_position.distance_to(position):
-				target_position = entity.position
-		
-	if target_position != null:
-		look_follow(state, position, target_position)
-
-# found here https://docs.godotengine.org/en/latest/tutorials/physics/rigid_body.html
-func look_follow(state, current_position, target_position : Vector3):
-	#var up_dir = Vector3(0, 1, 0)
-	#var cur_dir = (current_rotation*PI)/180 #current_transform.basis * Vector3(0, 0, 1)
-	var target_dir = current_position.direction_to(target_position) #(target_position - current_position).normalized()
-	#var rotation_angle = acos(cur_dir.x) - acos(target_dir.x)
-	print(target_dir)
-	#print(rotation.y)
-	#rotation.y = target_dir.y
-	#state.angular_velocity.y = (rotation_angle / state.step)
-	rotation.y = -target_dir.y
-	current_camera.rotation.x = -target_dir.x
-
-# Implement step assistance, essentially jump the player up the distance to cover a specific height, important for slopes, walking up a slope of blocks, or walking over small collision boxes
-
 @export var mouse_sensitivity = 1.0
+
+@export var target_node : Node3D
 
 var x = 0
 var y = 0
@@ -104,7 +51,6 @@ var y = 0
 var inverse_x : bool = false
 var inverse_y : bool = false
 
-var camera_number : int = 0
 var current_camera : Camera3D
 
 func _ready():
@@ -119,15 +65,37 @@ func _unhandled_input(event):
 			x = event.relative.x * mouse_sensitivity
 		if event.relative.y != 0:
 			y = event.relative.y * mouse_sensitivity
+
+func _integrate_forces(state):
+	# basic movement based off of the default character script
+	var input_dir = Input.get_vector(\"a\", \"d\", \"w\", \"s\")
+	#var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if direction:
+		apply_central_impulse(Vector3(direction.x * SPEED * state.step,0.0,direction.z * SPEED * state.step))
+	else:
+		apply_central_impulse(Vector3(-linear_velocity.x, 0.0,-linear_velocity.z))
 	
-	if event is InputEventKey:
-		if event.is_action_pressed(\"change_camera\"):
-			if current_camera == $\"Camera x\":
-				current_camera = $\"Camera2 X\"
-				current_camera.make_current()
-			else:
-				current_camera = $\"Camera x\"
-				current_camera.make_current()
+	if Input.is_action_pressed(\"up\"):
+		apply_central_impulse(Vector3(0.0,JUMP_VELOCITY * state.step,0.0))
+	else:
+		if Input.is_action_pressed(\"down\"):
+			apply_central_impulse(Vector3(0.0,-JUMP_VELOCITY * state.step,0.0))
+		else:
+			apply_central_impulse(Vector3(0.0,-linear_velocity.y,0.0))
+	
+	#var target_position = target_node.position - Vector3(0.0,1.5,0.0)
+	#var target_direction = (target_position - position).normalized()
+	#var looking_at_transform = transform.looking_at(target_position, Vector3(0,-1,0), true).orthonormalized()
+	#print(transform.basis.y)
+	#print(looking_at_transform.basis.y)
+	#looking_at_transform.basis.y
+	#transform.basis.y = looking_at_transform.basis.y
+	#looking_at_transform.basis.x
+	#transform.basis.x = looking_at_transform.basis.x
+	#transform.orthonormalized()
+
+# Implement step assistance, essentially jump the player up the distance to cover a specific height, important for slopes, walking up a slope of blocks, or walking over small collision boxes
 
 func _process(delta):
 	if x != 0:
@@ -140,8 +108,6 @@ func _process(delta):
 			current_camera.rotate_x(y*delta)
 		else:
 			current_camera.rotate_x(-y*delta)
-	
-	#$\"Camera x\".rotation.x = clamp($\"Camera x\".rotation.x, -PI/2,PI/2)
 	
 	x = 0
 	y = 0
@@ -173,6 +139,63 @@ albedo_color = Color(1, 0, 1, 1)
 material = SubResource("StandardMaterial3D_5vrin")
 top_radius = 0.016
 bottom_radius = 0.016
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oclml"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_of3sm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghy8x"]
+albedo_color = Color(1, 0.176471, 0.0588235, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_4vjd2"]
+material = SubResource("StandardMaterial3D_ghy8x")
+top_radius = 0.063
+bottom_radius = 0.063
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ip2it"]
+albedo_color = Color(0, 1, 0.152941, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ipmyp"]
+material = SubResource("StandardMaterial3D_ip2it")
+top_radius = 0.063
+bottom_radius = 0.063
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m3ixg"]
+albedo_color = Color(0.0666667, 1, 0.105882, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dp17k"]
+material = SubResource("StandardMaterial3D_m3ixg")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gs3sn"]
+albedo_color = Color(1, 0.0470588, 0.0588235, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qv3vu"]
+material = SubResource("StandardMaterial3D_gs3sn")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ki63a"]
+albedo_color = Color(0.0470588, 0.0862745, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ktbkw"]
+material = SubResource("StandardMaterial3D_ki63a")
+top_radius = 0.063
+bottom_radius = 0.063
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_guu7t"]
+albedo_color = Color(0.0705882, 0.0784314, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fiqev"]
+material = SubResource("StandardMaterial3D_guu7t")
+top_radius = 0.01
+bottom_radius = 0.125
+height = 0.5
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_q07gd")
@@ -220,11 +243,12 @@ environment = SubResource("Environment_yyoo0")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.884711, -0.331057, 0.328158, 0, 0.70399, 0.71021, -0.46614, -0.628331, 0.622828, 2.86618, 7.83287, 8.03711)
 
-[node name="Player" type="RigidBody3D" parent="." node_paths=PackedStringArray("entities")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -11)
+[node name="Player" type="RigidBody3D" parent="." node_paths=PackedStringArray("entities", "target_node")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9)
 gravity_scale = 0.0
 script = SubResource("GDScript_mu75s")
 entities = NodePath("../entities")
+target_node = NodePath("../entities/Entity")
 
 [node name="Model" type="MeshInstance3D" parent="Player"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
@@ -257,5 +281,40 @@ mesh = SubResource("CylinderMesh_5shgj")
 
 [node name="Entity" parent="entities" instance=ExtResource("3_mqu68")]
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(-0.585892, 0, -0.81039, 0, 1, 0, 0.81039, 0, -0.585892, -16.4953, -4.76837e-07, -15.3767)
+[node name="Player orientation test" type="RigidBody3D" parent="." node_paths=PackedStringArray("locked_entity")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 4.06978, -6)
+gravity_scale = 0.0
+script = ExtResource("4_x6uby")
+locked_entity = NodePath("../entities/Entity")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player orientation test"]
+shape = SubResource("BoxShape3D_oclml")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player orientation test"]
+mesh = SubResource("CapsuleMesh_of3sm")
+
+[node name="Node3D" type="Node3D" parent="Player orientation test"]
+
+[node name="Arrow" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+mesh = SubResource("CylinderMesh_4vjd2")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_ipmyp")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(-4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0, 1, 1.62068, 0, 0)
+mesh = SubResource("CylinderMesh_dp17k")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.67107, 0)
+mesh = SubResource("CylinderMesh_qv3vu")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_ktbkw")
+
+[node name="MeshInstance3D5" type="MeshInstance3D" parent="Player orientation test/Node3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 1.16861)
+mesh = SubResource("CylinderMesh_fiqev")
