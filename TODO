@@ -1,0 +1,13 @@
+Tasks:
+
+performance - greedy mesh, chunk occlusion culling, etc.
+details - block materials in mesh using surface tool, better block model integration/workflow
+mechanics - placing/destroying blocks, inventory
+mechanics - world generation
+mechanics - collision mesh system for chunks, proper character gravity+movement
+systems - proper chunk storage system for entities
+systems - solar system mechanics
+quality of life - selection outline
+graphics - atmospheres, better vibrant colors for lighting
+systems - resource loading system proper using gson
+

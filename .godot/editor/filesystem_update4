@@ -1,3 +1,10 @@
-res://World/world.tscn
-res://World/Player orientation test.gd
 res://World/entity.tscn
+res://World/entity.gdshader
+res://World/world.tscn
+res://chunk_renderer.tscn
+res://player.tscn
+res://World/test.tscn
+res://World/entity.gd
+res://chunk.gd
+res://efficient_block_state.gd
+res://ResourceLoader.gd
