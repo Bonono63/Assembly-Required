@@ -105,6 +105,7 @@ func _process(delta):
 	else:
 		SPEED = WALKING_SPEED
 	
+	# TODO make all of these movements relative to the down vector/gravity
 	#movement
 	var direction : float = $"Camera_y".rotation.y
 	
@@ -136,16 +137,6 @@ func _process(delta):
 	
 	x = 0
 	y = 0
-
-func get_closest_entity():
-	var closest
-	var prev_distance = 9223372036854775807
-	for body in entities.get_children():
-		var distance = position.distance_to(body.position)
-		if distance < prev_distance:
-			prev_distance = distance
-			closest = body
-	return closest
 
 func on_window_selected():
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

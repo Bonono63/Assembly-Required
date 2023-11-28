@@ -29,6 +29,8 @@ func _init():
 func register_blocks(path : String) -> int:
 	register_block(false, false, "Air", [], [])
 	register_block(false, true, "Dirt", generic_box, generic_box)
+	register_block(false, true, "Stone", generic_box, generic_box)
+	register_block(false, true, "Grass", generic_box, generic_box)
 	return 0
 
 func register_block(_translucent : bool, _is_full : bool, _display_name : String, _model : Array, _collision_shape : Array):
