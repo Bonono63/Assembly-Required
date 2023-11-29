@@ -14,9 +14,16 @@ var data : Dictionary = {}
 
 func _init(_palette : Array[block_state], _data : Dictionary) -> void:
 	# initializes the chunk as all AIR
-	data[chunk_length_cubed] = get_or_create_blockstate(block_state.new(0))
+	data[chunk_length_cubed-1] = get_or_create_blockstate(block_state.new(1))
+	data[chunk_length_cubed-chunk_length_squared-1] = get_or_create_blockstate(block_state.new(0))
 	
-	palette = _palette
+	#set_block_state(chunk_length_cubed-(chunk_length_squared/2)-1, block_state.new(2))
+	
+	#print(index_to_pos(chunk_length_cubed-1))
+	#print(index_to_pos(chunk_length_cubed-chunk_length_squared-1))
+	
+	if !_palette.is_empty():
+		palette = _palette
 	if !_data.is_empty():
 		data = _data
 
@@ -108,7 +115,7 @@ func get_or_create_blockstate(state : block_state) -> int:
 		return palette.find(state)
 	else:
 		palette.append(state)
-		return palette.size()
+		return palette.size()-1
 
 # searches for the block state at the given position
 func get_block_state_pos(pos : Vector3i) -> block_state:
@@ -134,7 +141,7 @@ func get_block_state(index : int) -> block_state:
 		else:
 			return palette[data.get(find_greatest_key(index))]
 	
-	printerr("position of get_block was out of bounds")
+	printerr("position of get_block_state was out of bounds")
 	return null
 
 # Find the key the closest position before the given key
@@ -153,8 +160,8 @@ func find_greatest_key(index : int) -> int:
 	
 	return greatest_index
 
-func get_empty() -> bool:
-	if data.size() == 1 and data[chunk_length_cubed] == block_state.new(0):
+func is_empty() -> bool:
+	if data.size() == 1 and get_block_state(chunk_length_cubed-1).identifier == 0:
 		return true
 	else:
 		return false

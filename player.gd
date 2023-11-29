@@ -12,7 +12,7 @@ var walking_time : int = 0
 
 @export var entities : Node3D
 
-@export var mouse_sensitivity = 0.0025
+@export var mouse_sensitivity = 0.025
 
 var x = 0
 var y = 0
@@ -42,9 +42,9 @@ func _on_body_entered(body : Node):
 func _unhandled_input(event):
 	if event is InputEventMouseMotion:
 		if event.relative.x != 0:
-			x = event.relative.x * mouse_sensitivity
+			x = event.relative.x
 		if event.relative.y != 0:
-			y = event.relative.y * mouse_sensitivity
+			y = event.relative.y
 	
 	if event is InputEventKey:
 		if event.is_action_pressed("w"):
@@ -89,14 +89,14 @@ func _process(delta):
 	# Camera 
 	if x != 0:
 		if inverse_x:
-			$"Camera_y".rotate_y(x)
+			$"Camera_y".rotation_degrees.y += (x * mouse_sensitivity)
 		else:
-			$"Camera_y".rotate_y(-x)
+			$"Camera_y".rotation_degrees.y += (-x * mouse_sensitivity)
 	if y != 0:
 		if inverse_x:
-			$"Camera_y/Camera_x".rotate_x(y)
+			$"Camera_y/Camera_x".rotation_degrees.x += (y * mouse_sensitivity)
 		else:
-			$"Camera_y/Camera_x".rotate_x(-y)
+			$"Camera_y/Camera_x".rotation_degrees.x += (-y * mouse_sensitivity)
 	
 	# movment SPEED
 	

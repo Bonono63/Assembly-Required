@@ -1,7 +1,9 @@
 extends RigidBody3D
 
 # number of blocks in a given chunk
-const chunk_size = 32*32*32
+const chunk_length = 32
+const chunk_length_squared = 32*32
+const chunk_length_cubed = 32*32*32
 
 var entity_size : Vector3i = Vector3i.ZERO
 var seed : int
@@ -15,17 +17,16 @@ var chunks : Dictionary = {}
  
 # TODO add player as a var when the solar system generates in the future
 func _init():
-	print("generating chunks in memory")
-	for x in 16:
-		for y in 16:
-			for z in 16:
+	print("generating chunks in memory, SUPER EFFICIENT!")
+	var size = 3
+	for x in size:
+		for y in size:
+			for z in size:
 				print(Vector3(x,y,z))
 				var generator = WorldGeneration.new(seed, Vector3i(x,y,z))
 				await generator.chunk_data_loaded
 				chunks[Vector3i(x,y,z)] = generator.get_chunk_data()
 				#chunks[Vector3i(x,y,z)].set_block_state(chunk_size, block_state.new(0))
-	
-	print(chunks[Vector3i(0,0,0)])
 	
 	print("generating chunk meshes")
 	generate_chunks(chunks)
@@ -76,47 +77,54 @@ func clear_chunk_renderers() -> void:
 
 # create and load chunk renderers
 func generate_chunks(_chunks : Dictionary) -> void:
-	
+	var before_time = Time.get_ticks_msec()
 	for chunk in _chunks.keys():
-		var renderer = preload("res://chunk_renderer.tscn").instantiate()
-		renderer.position = chunk*32
-		$Renderer.add_child(renderer)
 		var mesh = generate_chunk_mesh(_chunks.get(chunk))
-		renderer.init(mesh, true)
-		renderer.name = str(chunk)
+		if !mesh.is_empty():
+			var renderer = preload("res://chunk_renderer.tscn").instantiate()
+			renderer.position = chunk*32
+			$Renderer.add_child(renderer)
+			renderer.init(mesh, true)
+			renderer.name = str(chunk)
+	
+	var after_time = Time.get_ticks_msec()
+	print("Elapsed time for mesh generation: ",str((after_time-before_time)), " seconds")
 
 # Creates the mesh to be rendered
 # Currenty does not have culling or greedy meshing
 func generate_chunk_mesh(chunk : Chunk) -> Array:
-	# Create the mesh data
-	var vertex_data : Array[Vector3] = []
-	
-	var i : int = 0
-	while i < chunk_size:
-		#get block data
-		var _block_state : block_state = chunk.get_block_state(i)
-		# check if the block is air
-		if _block_state.identifier != 0:
-			# iterate through every vertex in the block's model
-			for vertex in GlobalResourceLoader.block_registry[_block_state.identifier].model:
-				#offset the vertex by the block's position
-				vertex_data.append(vertex+index_to_pos(i))
+	if chunk.is_empty():
+		return []
+	else:
+		# Create the mesh data
+		var vertex_data : Array[Vector3] = []
 		
-		#next index
-		i+=1
-	
-	var mesh_data : Array
-	mesh_data.resize(ArrayMesh.ARRAY_MAX)
-	# we only add vertex data because computing indices is too much of a pain in the butt
-	mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array(vertex_data)
-	
-	return mesh_data
+		var i : int = 0
+		while i < chunk_length_cubed:
+			#get block data
+			var _block_state : block_state = chunk.get_block_state(i)
+			# check if the block is air
+				# iterate through every vertex in the block's model
+			if _block_state.identifier != 0:
+				for vertex in GlobalResourceLoader.block_registry[_block_state.identifier].model:
+					#offset the vertex by the block's position
+					vertex_data.append(vertex+index_to_pos(i))
+			
+			#next index
+			i+=1
+		
+		var mesh_data : Array
+		mesh_data.resize(ArrayMesh.ARRAY_MAX)
+		# we only add vertex data because computing indices is too much of a pain in the butt
+		mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array(vertex_data)
+		
+		return mesh_data
 
 func generate_convex_collision_shapes(_chunks : Array) -> void:
 	clear_shape_owners()
 	
 	for chunk in _chunks:
-		for i in chunk_size:
+		for i in chunk_length_cubed:
 			var _block_state : block_state = chunk.chunk_data[i]
 			# check if the block is air
 			if _block_state.identifier != 0:

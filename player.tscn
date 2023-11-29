@@ -15,6 +15,7 @@ size = Vector3(0.75, 2, 0.75)
 axis_lock_angular_x = true
 axis_lock_angular_y = true
 axis_lock_angular_z = true
+gravity_scale = 0.0
 script = ExtResource("1_hv76i")
 
 [node name="Model" type="MeshInstance3D" parent="."]
