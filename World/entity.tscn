@@ -8,6 +8,6 @@ gravity_scale = 0.0
 freeze = true
 script = ExtResource("1_djipv")
 
-[node name="Renderer" type="Node" parent="."]
+[node name="Renderer" type="Node3D" parent="."]
 
 [node name="Colliders" type="Node" parent="."]

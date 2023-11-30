@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://d2lr3bqjaoydy"]
+[gd_scene load_steps=12 format=3 uid="uid://d2lr3bqjaoydy"]
 
 [ext_resource type="Script" path="res://World/world.gd" id="1_q07gd"]
 [ext_resource type="Script" path="res://World/FPS.gd" id="2_hij8h"]
@@ -19,6 +19,12 @@ background_mode = 2
 sky = SubResource("Sky_awji0")
 tonemap_mode = 3
 ssao_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v8m1h"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_blf3n"]
+material = SubResource("StandardMaterial3D_v8m1h")
+size = Vector3(0.125, 0.125, 0.125)
 
 [node name="World" type="Node3D"]
 script = ExtResource("1_q07gd")
@@ -74,12 +80,15 @@ environment = SubResource("Environment_yyoo0")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.887011, -0.326506, 0.326506, 0, 0.707107, 0.707107, -0.461749, -0.627211, 0.627211, 60, 60, 60)
-shadow_enabled = true
 
 [node name="entities" type="Node3D" parent="."]
 
 [node name="Entity" parent="entities" node_paths=PackedStringArray("player") instance=ExtResource("4_m84to")]
+freeze = false
 player = NodePath("../../Player")
 
 [node name="Player" parent="." instance=ExtResource("4_vqtab")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -4)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_blf3n")

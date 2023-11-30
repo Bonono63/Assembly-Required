@@ -7,5 +7,5 @@ var render_radius : int = 4
 # What is the length of the cube in which colliders are created
 var player_collision_distance : int = 4
 
-func _ready():
-	pass#Engine.max_fps = target_fps
+func _init():
+	Engine.max_fps = target_fps

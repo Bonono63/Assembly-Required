@@ -1,10 +1,11 @@
-res://World/entity.tscn
-res://World/entity.gdshader
 res://World/world.tscn
+res://World/entity.gdshader
+res://World/entity.tscn
 res://chunk_renderer.tscn
 res://player.tscn
-res://chunk_renderer.gd
-res://World/entity.gd
+res://index_tools.gd
 res://chunk.gd
+res://World/entity.gd
 res://block_state.gd
-res://player.gd
+res://chunk_renderer.gd
+res://settings.gd

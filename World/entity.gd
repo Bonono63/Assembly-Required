@@ -5,6 +5,8 @@ const chunk_length = 32
 const chunk_length_squared = 32*32
 const chunk_length_cubed = 32*32*32
 
+const mesh_offset = Vector3(0.5,0.5,0.5)
+
 var entity_size : Vector3i = Vector3i.ZERO
 var seed : int
 
@@ -14,32 +16,52 @@ var chunks : Dictionary = {}
 @onready var world = get_parent().get_parent()
 
 @export var player : Node3D
+
+signal load_chunks
  
+
 # TODO add player as a var when the solar system generates in the future
 func _init():
-	print("generating chunks in memory, SUPER EFFICIENT!")
-	var size = 3
-	for x in size:
-		for y in size:
-			for z in size:
-				print(Vector3(x,y,z))
-				var generator = WorldGeneration.new(seed, Vector3i(x,y,z))
-				await generator.chunk_data_loaded
-				chunks[Vector3i(x,y,z)] = generator.get_chunk_data()
-				#chunks[Vector3i(x,y,z)].set_block_state(chunk_size, block_state.new(0))
 	
-	print("generating chunk meshes")
-	generate_chunks(chunks)
+	connect("load_chunks", Callable(self, "on_load_chunks"))
+	
+	print("generating chunks in memory, SUPER EFFICIENT!")
+	
+	var size = 1
+	for index in size**3:
+		var pos = index_tools.index_to_pos(index)
+		print(pos)
+		var start_time = Time.get_ticks_msec()
+		chunks[pos] = Chunk.new([],{})
+		var end_time = Time.get_ticks_msec()
+		print("Elapsed time for chunk ", pos,": ", end_time-start_time, " milliseconds")
+	
 
 func _ready():
 	world.connect("reload_chunks", Callable(self, "on_reload_chunks"))
 	
+	emit_signal("load_chunks", chunks)
 	#generate_chunks(get_chunks_within_render_distance())
 	#generate_convex_collision_shapes(chunks)
 	#print(get_shape_owners().size())
 
+
+func _physics_process(delta):
+	#position.x = 5*sin(Time.get_ticks_msec()*0.02)#*delta
+	#print(sin(Time.get_ticks_msec()*0.2))
+	#print(Time.get_ticks_msec()*0.2)
+	#move_and_collide(Vector3(2*sin(Time.get_ticks_msec()*0.002),0,0))
+	#print(position)
+	pass
+
+func on_load_chunks(_chunks : Dictionary):
+	print("loading chunks")
+	generate_chunks(_chunks)
+
+
 func pos_to_chunk_pos(pos : Vector3) -> Vector3i:
 	return Vector3i(pos/32)
+
 
 func get_chunks_coordinates_within_render_distance() -> Array[Vector3i]:
 	var chunk_pos : Vector3i = pos_to_chunk_pos(player.position)
@@ -59,6 +81,7 @@ func get_chunks_coordinates_within_render_distance() -> Array[Vector3i]:
 	
 	return points
 
+
 func get_player_chunk(player : Node3D) -> Chunk:
 	var pos = pos_to_chunk_pos(player.position)
 	
@@ -66,59 +89,121 @@ func get_player_chunk(player : Node3D) -> Chunk:
 	return null
 	
 
+
 func on_reload_chunks():
 	clear_chunk_renderers()
 	# TODO mesh generation code 2.0 + collision shapes?
 	#generate_chunks(get_chunks_within_render_distance())
 
+
 func clear_chunk_renderers() -> void:
 	for renderer in $Renderer.get_children():
 		renderer.queue_free()
 
+
 # create and load chunk renderers
 func generate_chunks(_chunks : Dictionary) -> void:
-	var before_time = Time.get_ticks_msec()
+	
 	for chunk in _chunks.keys():
-		var mesh = generate_chunk_mesh(_chunks.get(chunk))
-		if !mesh.is_empty():
+		var before_time = Time.get_ticks_msec()
+		
+		if !_chunks[chunk].is_empty():
+			var mesh = generate_chunk_mesh(_chunks.get(chunk))
 			var renderer = preload("res://chunk_renderer.tscn").instantiate()
 			renderer.position = chunk*32
 			$Renderer.add_child(renderer)
-			renderer.init(mesh, true)
+			renderer.init(mesh, false)
 			renderer.name = str(chunk)
-	
-	var after_time = Time.get_ticks_msec()
-	print("Elapsed time for mesh generation: ",str((after_time-before_time)), " seconds")
+		
+		var after_time = Time.get_ticks_msec()
+		print("Elapsed time for mesh generation: ",str((after_time-before_time)), " milliseconds")
+
 
 # Creates the mesh to be rendered
-# Currenty does not have culling or greedy meshing
+# Currenty does not have any greedy meshing
 func generate_chunk_mesh(chunk : Chunk) -> Array:
-	if chunk.is_empty():
-		return []
-	else:
-		# Create the mesh data
-		var vertex_data : Array[Vector3] = []
-		
-		var i : int = 0
-		while i < chunk_length_cubed:
-			#get block data
-			var _block_state : block_state = chunk.get_block_state(i)
-			# check if the block is air
-				# iterate through every vertex in the block's model
-			if _block_state.identifier != 0:
-				for vertex in GlobalResourceLoader.block_registry[_block_state.identifier].model:
-					#offset the vertex by the block's position
-					vertex_data.append(vertex+index_to_pos(i))
-			
-			#next index
-			i+=1
-		
-		var mesh_data : Array
-		mesh_data.resize(ArrayMesh.ARRAY_MAX)
-		# we only add vertex data because computing indices is too much of a pain in the butt
-		mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array(vertex_data)
-		
-		return mesh_data
+	var vertex_data : Array[Vector3] = []
+	
+	print(chunk.data)
+	
+	# for each sequence
+	for index in chunk.data:
+		var index_data = chunk.data[index]
+		var _block_state = chunk.palette[index_data]
+		# Air check
+		if _block_state.identifier != 0:
+			# for blocks in the sequence
+			for i in index-chunk.find_least_key(index):
+				if _block_state.get_full():
+					var adjusted_index = index-i
+					
+					# up face
+					var up = index_tools.get_above_pos(adjusted_index)
+					if up == -1 or !chunk.get_block_state(up).get_full():
+						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+					
+					# forward face
+					var forward = index_tools.get_backward_pos(adjusted_index)
+					if forward == -1 or !chunk.get_block_state(forward).get_full():
+						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+					
+					# right face
+					var right = index_tools.get_right_pos(adjusted_index)
+					if right == -1 or !chunk.get_block_state(right).get_full():
+						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+					
+					# backward face
+					var backward = index_tools.get_forward_pos(adjusted_index)
+					if backward == -1 or !chunk.get_block_state(backward).get_full():
+						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+					
+					# left face
+					var left = index_tools.get_left_pos(adjusted_index)
+					if left == -1 or !chunk.get_block_state(left).get_full():
+						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+					
+					# down face
+					var down = index_tools.get_below_pos(adjusted_index)
+					if down == -1 or !chunk.get_block_state(down).get_full():
+						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+	
+	var mesh_data : Array
+	mesh_data.resize(ArrayMesh.ARRAY_MAX)
+	# we only add vertex data because computing indices is too much of a pain in the butt
+	mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array(vertex_data)
+	
+	return mesh_data
+
 
 func generate_convex_collision_shapes(_chunks : Array) -> void:
 	clear_shape_owners()
@@ -132,7 +217,7 @@ func generate_convex_collision_shapes(_chunks : Array) -> void:
 				# iterate through every vertex in the block's model
 				for vertex in GlobalResourceLoader.block_registry[_block_state.identifier].collision_shape:
 					#offset the vertex by the block's position
-					points.append(Vector3((chunk.position*32))+vertex+index_to_pos(i))
+					points.append(Vector3((chunk.position*32))+vertex+index_tools.index_to_pos(i))
 					
 				var collision_shape = ConvexPolygonShape3D.new()
 				collision_shape.points = PackedVector3Array(points)
@@ -140,21 +225,7 @@ func generate_convex_collision_shapes(_chunks : Array) -> void:
 				var id = create_shape_owner(self)
 				shape_owner_add_shape(id, collision_shape)
 
+
 func clear_shape_owners() -> void:
 	for _owner in get_shape_owners():
 		remove_shape_owner(_owner)
-
-static func init_3d_array(array:Array, size : Vector3i):
-	array.resize(size.x)
-	for x in array.size():
-		array[x] = []
-		array[x].resize(size.y)
-		for y in array[x].size():
-			array[x][y] = []
-			array[x][y].resize(size.z)
-
-func index_to_pos(i : int) -> Vector3:
-	return Vector3(i/(32*32),(i/32) % 32,i % 32)
-
-func pos_to_index(pos : Vector3) -> int:
-	return (pos.x*32*32)+(pos.y*32)+pos.z
