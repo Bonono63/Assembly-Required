@@ -85,7 +85,7 @@ func get_chunks_coordinates_within_render_distance() -> Array[Vector3i]:
 func get_player_chunk(player : Node3D) -> Chunk:
 	var pos = pos_to_chunk_pos(player.position)
 	
-	## TODO ADD CHUNKS TO MEMORY or something
+	# TODO ADD CHUNKS TO MEMORY or something
 	return null
 	
 
@@ -124,78 +124,76 @@ func generate_chunks(_chunks : Dictionary) -> void:
 func generate_chunk_mesh(chunk : Chunk) -> Array:
 	var vertex_data : Array[Vector3] = []
 	
-	print(chunk.data)
-	
 	# for each sequence
 	for index in chunk.data:
 		var index_data = chunk.data[index]
 		var _block_state = chunk.palette[index_data]
-		# Air check
-		if _block_state.identifier != 0:
-			# for blocks in the sequence
+		# check whether it can be subject to culling
+		# This could be used later to decide to greedy mesh
+		if _block_state.get_full():
 			for i in index-chunk.find_least_key(index):
-				if _block_state.get_full():
-					var adjusted_index = index-i
-					
-					# up face
-					var up = index_tools.get_above_pos(adjusted_index)
-					if up == -1 or !chunk.get_block_state(up).get_full():
-						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-					
-					# forward face
-					var forward = index_tools.get_backward_pos(adjusted_index)
-					if forward == -1 or !chunk.get_block_state(forward).get_full():
-						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-					
-					# right face
-					var right = index_tools.get_right_pos(adjusted_index)
-					if right == -1 or !chunk.get_block_state(right).get_full():
-						vertex_data.append(Vector3(-0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-					
-					# backward face
-					var backward = index_tools.get_forward_pos(adjusted_index)
-					if backward == -1 or !chunk.get_block_state(backward).get_full():
-						vertex_data.append(Vector3(0.5, 0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-					
-					# left face
-					var left = index_tools.get_left_pos(adjusted_index)
-					if left == -1 or !chunk.get_block_state(left).get_full():
-						vertex_data.append(Vector3(0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, 0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-					
-					# down face
-					var down = index_tools.get_below_pos(adjusted_index)
-					if down == -1 or !chunk.get_block_state(down).get_full():
-						vertex_data.append(Vector3(-0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, 0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
-						vertex_data.append(Vector3(-0.5, -0.5, -0.5)+index_tools.index_to_pos(adjusted_index)+mesh_offset)
+				var adjusted_index : int = index-i
+				var adjusted_pos : Vector3 = index_tools.index_to_pos(adjusted_index)
+				
+				# up face
+				var up = index_tools.get_above_pos(adjusted_index)
+				if up == -1 or !chunk.get_block_state(up).get_full():
+					vertex_data.append(Vector3(0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+				
+				# forward face
+				var forward = index_tools.get_backward_pos(adjusted_index)
+				if forward == -1 or !chunk.get_block_state(forward).get_full():
+					vertex_data.append(Vector3(-0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+				
+				# right face
+				var right = index_tools.get_right_pos(adjusted_index)
+				if right == -1 or !chunk.get_block_state(right).get_full():
+					vertex_data.append(Vector3(-0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+				
+				# backward face
+				var backward = index_tools.get_forward_pos(adjusted_index)
+				if backward == -1 or !chunk.get_block_state(backward).get_full():
+					vertex_data.append(Vector3(0.5, 0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+				
+				# left face
+				var left = index_tools.get_left_pos(adjusted_index)
+				if left == -1 or !chunk.get_block_state(left).get_full():
+					vertex_data.append(Vector3(0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, 0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+				
+				# down face
+				var down = index_tools.get_below_pos(adjusted_index)
+				if down == -1 or !chunk.get_block_state(down).get_full():
+					vertex_data.append(Vector3(-0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, 0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
+					vertex_data.append(Vector3(-0.5, -0.5, -0.5)+adjusted_pos+mesh_offset)
 	
 	var mesh_data : Array
 	mesh_data.resize(ArrayMesh.ARRAY_MAX)

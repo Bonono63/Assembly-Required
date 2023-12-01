@@ -20,5 +20,5 @@ func _ready() -> void:
 		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_data)
 	var mat = Material.new()
 	mat.set("cull_mode", 0)
-	mat.set("albedo_color",Color("ffffff"))
+	mat.set("albedo_color",Color.GRAY)
 	mesh.surface_set_material(0, mat)
