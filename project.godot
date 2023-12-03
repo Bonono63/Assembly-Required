@@ -13,12 +13,12 @@ config_version=5
 config/name="Assembly Required"
 run/main_scene="res://World/world.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://resources/icon.svg"
 
 [autoload]
 
-Settings="*res://settings.gd"
-GlobalResourceLoader="*res://ResourceLoader.gd"
+Settings="*res://World/settings.gd"
+GlobalResourceLoader="*res://World/ResourceLoader.gd"
 
 [display]
 
@@ -27,6 +27,14 @@ window/vsync/vsync_mode=0
 [dotnet]
 
 project/assembly_name="Assembly Required"
+
+[file_customization]
+
+folder_colors={
+"res://World/": "green",
+"res://resources/": "red",
+"res://src/": "blue"
+}
 
 [input]
 

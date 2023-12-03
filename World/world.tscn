@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://World/FPS.gd" id="2_hij8h"]
 [ext_resource type="Script" path="res://World/PlayerInfo.gd" id="3_5rmrt"]
 [ext_resource type="PackedScene" uid="uid://di8hibhqp3kxh" path="res://World/entity.tscn" id="4_m84to"]
-[ext_resource type="PackedScene" uid="uid://dudtjsaf4llee" path="res://player.tscn" id="4_vqtab"]
+[ext_resource type="PackedScene" uid="uid://dudtjsaf4llee" path="res://World/player.tscn" id="4_vqtab"]
 
 [sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_qv1fm"]
 size = Vector2(16, 16)
