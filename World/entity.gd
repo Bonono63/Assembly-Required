@@ -27,12 +27,12 @@ func _init():
 	
 	print("generating chunks in memory, SUPER EFFICIENT!")
 	
-	var size = 1
+	var size = 3
 	for index in size**3:
-		var pos = index_tools.index_to_pos(index)
+		var pos = index_tools.index_to_pos(index, size)
 		print(pos)
 		var start_time = Time.get_ticks_msec()
-		chunks[pos] = _Chunk.new([], Chunk_Data.new())
+		chunks[pos] = Chunk.new([], Chunk_Data.new())
 		var end_time = Time.get_ticks_msec()
 		print("Elapsed time for chunk ", pos,": ", end_time-start_time, " milliseconds")
 
@@ -81,7 +81,7 @@ func get_chunks_coordinates_within_render_distance() -> Array[Vector3i]:
 	return points
 
 
-func get_player_chunk(player : Node3D) -> _Chunk:
+func get_player_chunk(player : Node3D) -> Chunk:
 	var pos = pos_to_chunk_pos(player.position)
 	
 	# TODO ADD CHUNKS TO MEMORY or something
@@ -109,7 +109,9 @@ func generate_chunks(_chunks : Dictionary) -> void:
 		#if !_chunks[chunk].is_empty():
 		var mesh = generate_chunk_mesh(_chunks.get(chunk))
 		var renderer = preload("res://World/chunk_renderer.tscn").instantiate()
+		print(chunk)
 		renderer.position = chunk*32
+		print(renderer.position)
 		$Renderer.add_child(renderer)
 		renderer.init(mesh, false)
 		renderer.name = str(chunk)
@@ -120,7 +122,7 @@ func generate_chunks(_chunks : Dictionary) -> void:
 
 # Creates the mesh to be rendered
 # Currenty does not have any greedy meshing
-func generate_chunk_mesh(chunk : _Chunk) -> Array:
+func generate_chunk_mesh(chunk : Chunk) -> Array:
 	var vertex_data : Array[Vector3] = []
 	
 	# for each sequence

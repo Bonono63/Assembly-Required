@@ -1,4 +1,4 @@
-class_name _Chunk
+class_name Chunk
 extends Resource
 
 const chunk_length = 32

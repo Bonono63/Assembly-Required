@@ -1,9 +1,9 @@
 class_name index_tools
 extends Node
 
-static func index_to_pos(i : int) -> Vector3:
+static func index_to_pos(i : int, scale : int = 32) -> Vector3:
 	@warning_ignore("integer_division")
-	return Vector3(i % 32, (i/32) % 32, i/(32*32))
+	return Vector3(i % scale, (i/scale) % scale, i/(scale*scale))
 
 static func pos_to_index(pos : Vector3) -> int:
 	return pos.x+(pos.y*32)+(pos.z*32*32)
