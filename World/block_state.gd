@@ -31,3 +31,6 @@ func get_collision_shape() -> Array:
 
 func get_display_name() -> String:
 	return GlobalResourceLoader.block_registry[identifier].display_name
+
+func get_material() -> Material:
+	return GlobalResourceLoader.block_registry[identifier].material

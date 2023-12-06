@@ -11,13 +11,16 @@ var is_full : bool
 var display_name : String
 # the model the block has 
 var model : Array = []
+# mesh material
+var material : StandardMaterial3D = StandardMaterial3D.new()
 # the collision shape of the block
 var collision_shape : Array = []
 
-func _init(_identifier : bool, _translucent : bool, _is_full : bool, _display_name : String, _model : Array, _collision_shape : Array):
+func _init(_identifier : bool, _translucent : bool, _is_full : bool, _display_name : String, _model : Array, _material : StandardMaterial3D, _collision_shape : Array):
 	identifier = _identifier
 	translucent = _translucent
 	is_full = _is_full
 	display_name = _display_name
 	model = _model
+	material = _material
 	collision_shape = _collision_shape

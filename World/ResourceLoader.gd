@@ -16,7 +16,6 @@ var generic_box : Array = Array([
 ])
 
 var block_registry : Array[Block] = []
-var un_greedable_list : Array[int] = []
 
 
 # load all resources/assets
@@ -27,14 +26,16 @@ func _init():
 
 # read bock resources
 func register_blocks(path : String) -> int:
-	register_block(false, false, "Air", [], [])
-	register_block(false, true, "Dirt", generic_box, generic_box)
-	register_block(false, true, "Stone", generic_box, generic_box)
-	register_block(false, true, "Grass", generic_box, generic_box)
+	register_block(false, false, "Air")
+	var dirt_material = StandardMaterial3D.new()
+	dirt_material.albedo_texture = ImageTexture.create_from_image(Image.load_from_file("res://resources/dirt.png"))
+	dirt_material.cull_mode = BaseMaterial3D.CULL_BACK
+	dirt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	register_block(false, true, "Dirt", generic_box, dirt_material, generic_box)
+	register_block(false, true, "Stone", generic_box, dirt_material, generic_box)
+	register_block(false, true, "Grass", generic_box, dirt_material, generic_box)
 	return 0
 
-func register_block(_translucent : bool, _is_full : bool, _display_name : String, _model : Array, _collision_shape : Array):
-	var block : Block = Block.new(block_registry.size(), _translucent, _is_full, _display_name, _model, _collision_shape)
-	if !_is_full:
-		un_greedable_list.append(block_registry.size())
+func register_block(_translucent : bool = false, _is_full : bool = true, _display_name : String = "", _model : Array = [], _material : StandardMaterial3D = StandardMaterial3D.new(), _collision_shape : Array = []):
+	var block : Block = Block.new(block_registry.size(), _translucent, _is_full, _display_name, _model, _material, _collision_shape)
 	block_registry.append(block)

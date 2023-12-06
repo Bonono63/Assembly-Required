@@ -27,7 +27,7 @@ func _init():
 	
 	print("generating chunks in memory, SUPER EFFICIENT!")
 	
-	var size = 3
+	var size = 1
 	for index in size**3:
 		var pos = index_tools.index_to_pos(index, size)
 		print(pos)
@@ -86,7 +86,6 @@ func get_player_chunk(player : Node3D) -> Chunk:
 	
 	# TODO ADD CHUNKS TO MEMORY or something
 	return null
-	
 
 
 func on_reload_chunks():
@@ -113,7 +112,7 @@ func generate_chunks(_chunks : Dictionary) -> void:
 		renderer.position = chunk*32
 		print(renderer.position)
 		$Renderer.add_child(renderer)
-		renderer.init(mesh, false)
+		renderer.init(mesh)
 		renderer.name = str(chunk)
 		
 		var after_time = Time.get_ticks_msec()
@@ -122,81 +121,138 @@ func generate_chunks(_chunks : Dictionary) -> void:
 
 # Creates the mesh to be rendered
 # Currenty does not have any greedy meshing
-func generate_chunk_mesh(chunk : Chunk) -> Array:
-	var vertex_data : Array[Vector3] = []
-	
-	# for each sequence
-	for index in chunk_length_cubed:
-		var index_data = chunk.get_block_state(index)
-		if index_data.get_full():
-			var pos : Vector3 = index_tools.index_to_pos(index)
-			
-			# up face
-			var up = index_tools.get_above_pos(index)
-			if up == -1 or !chunk.get_block_state(up).get_full():
-				vertex_data.append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
-			
-			# forward face
-			var forward = index_tools.get_backward_pos(index)
-			if forward == -1 or !chunk.get_block_state(forward).get_full():
-				vertex_data.append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
-			
-			# right face
-			var right = index_tools.get_right_pos(index)
-			if right == -1 or !chunk.get_block_state(right).get_full():
-				vertex_data.append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
-			
-			# backward face
-			var backward = index_tools.get_forward_pos(index)
-			if backward == -1 or !chunk.get_block_state(backward).get_full():
-				vertex_data.append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
-			
-			# left face
-			var left = index_tools.get_left_pos(index)
-			if left == -1 or !chunk.get_block_state(left).get_full():
-				vertex_data.append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
-			
-			# down face
-			var down = index_tools.get_below_pos(index)
-			if down == -1 or !chunk.get_block_state(down).get_full():
-				vertex_data.append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
-				vertex_data.append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
-	
-	var mesh_data : Array
-	mesh_data.resize(ArrayMesh.ARRAY_MAX)
-	# we only add vertex data because computing indices is too much of a pain in the butt
-	mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array(vertex_data)
-	
-	return mesh_data
+func generate_chunk_mesh(chunk : Chunk) -> ArrayMesh:
+	var final_mesh : ArrayMesh = ArrayMesh.new()
+	for _block_state in chunk.palette.size():
+		var mesh_data : Array = []
+		
+		mesh_data.resize(ArrayMesh.ARRAY_MAX)
+		mesh_data[ArrayMesh.ARRAY_VERTEX] = PackedVector3Array()
+		mesh_data[ArrayMesh.ARRAY_TEX_UV] = PackedVector2Array()
+		
+		# for each sequence
+		for index in chunk_length_cubed:
+			var index_data = chunk.get_block_state(index)
+			if index_data.get_full():
+				var pos : Vector3 = index_tools.index_to_pos(index)
+				
+				# up face
+				var up = index_tools.get_above_pos(index)
+				if up == -1 or !chunk.get_block_state(up).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+				
+				# forward face
+				var forward = index_tools.get_backward_pos(index)
+				if forward == -1 or !chunk.get_block_state(forward).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+				
+				# right face
+				var right = index_tools.get_right_pos(index)
+				if right == -1 or !chunk.get_block_state(right).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+				
+				# backward face
+				var backward = index_tools.get_forward_pos(index)
+				if backward == -1 or !chunk.get_block_state(backward).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+				
+				# left face
+				var left = index_tools.get_left_pos(index)
+				if left == -1 or !chunk.get_block_state(left).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, 0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+				
+				# down face
+				var down = index_tools.get_below_pos(index)
+				if down == -1 or !chunk.get_block_state(down).get_full():
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, 0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(0.5, -0.5, -0.5)+pos+mesh_offset)
+					mesh_data[ArrayMesh.ARRAY_VERTEX].append(Vector3(-0.5, -0.5, -0.5)+pos+mesh_offset)
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+					
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,1))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(0,0))
+					mesh_data[ArrayMesh.ARRAY_TEX_UV].append(Vector2(1,0))
+		
+		
+		#mesh_data[ArrayMesh.ARRAY_NORMAL] = PackedVector3Array(normal_data)
+		#mesh_data[ArrayMesh.ARRAY_COLOR] = PackedColorArray(color_data)
+		final_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_data)
+		
+		# set the surface index material to the block's material
+		final_mesh.surface_set_material(_block_state, chunk.palette[_block_state].get_material())
+	return final_mesh
 
 
 func generate_convex_collision_shapes(_chunks : Array) -> void:
