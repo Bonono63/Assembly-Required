@@ -10,7 +10,8 @@ var palette : Array[block_state]
 # stores the position of the block states within the chunk.
 var data : Chunk_Data
 
-func _init(_palette : Array[block_state], _data : Chunk_Data) -> void:
+
+func _init(_palette : Array[block_state] = [], _data : Chunk_Data = Chunk_Data.new()) -> void:
 	palette.append(block_state.new(0))
 	
 	data = _data
@@ -20,17 +21,12 @@ func _init(_palette : Array[block_state], _data : Chunk_Data) -> void:
 	
 	set_block_state(chunk_length_cubed-1, block_state.new(0))
 	
-	# fill with random shit
-	var index = chunk_length_cubed-1
-	while index >= 0:
-		set_block_state(index, block_state.new(randi_range(0,1)))
-		index-=1
-	
 
 
 # TODO remove redundant block states from palette if applicable
 func set_block_state(index : int, state : block_state) -> void:
 	data.set_index(index, get_or_create_blockstate(state))
+
 
 # Either returns the index of the stored blockstate from the palette
 # or returns the index of the appended state

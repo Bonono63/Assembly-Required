@@ -19,7 +19,6 @@ var data : PackedByteArray
 func _init():
 	for i in 32768*2:
 		data.append(0)
-	print("data size: ",data.size())
 
 
 func get_index(data_index : int) -> int:

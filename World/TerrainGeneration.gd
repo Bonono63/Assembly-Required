@@ -1,31 +1,24 @@
-class_name WorldGeneration
+class_name TerrainGeneration
 extends Node
 
 signal chunk_data_loaded
 
 var seed : int
 var chunk_position : Vector3i
-var chunk : _Chunk
+var chunk : Chunk = Chunk.new()
 
-enum block_types
-{
-	AIR,
-	DIRT,
-	GRASS,
-	STONE,
-}
-
-func _init(_seed : int, _chunk_position : Vector3i):
+func _init(_seed : int, _chunk_position : Vector3i = Vector3i(0,0,0)) -> void:
 	seed = _seed
 	chunk_position = _chunk_position
-	chunk = _Chunk.new([],Chunk_Data.new())
 	generate()
 
-func change_position(_chunk_position):
-	chunk_position = _chunk_position
+func change_position(_chunk_position : Vector3i) -> void:
+	chunk = Chunk.new()
+	chunk_position = _chunk_position+Vector3i(1,1,1)
+	generate()
 
 # TODO return actual chunks
-func get_chunk_data() -> _Chunk:
+func get_chunk() -> Chunk:
 	return chunk
 
 # TODO properly setup noise and stuff to do things

@@ -31,6 +31,7 @@ func register_blocks(path : String) -> int:
 	dirt_material.albedo_texture = ImageTexture.create_from_image(Image.load_from_file("res://resources/dirt.png"))
 	dirt_material.cull_mode = BaseMaterial3D.CULL_BACK
 	dirt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	dirt_material.vertex_color_use_as_albedo = dirt_material.FLAG_ALBEDO_FROM_VERTEX_COLOR
 	register_block(false, true, "Dirt", generic_box, dirt_material, generic_box)
 	register_block(false, true, "Stone", generic_box, dirt_material, generic_box)
 	register_block(false, true, "Grass", generic_box, dirt_material, generic_box)
